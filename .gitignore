@@ -1,0 +1,24 @@
+# Sensitive configuration & keys
+/config/.ai_master.key
+
+# User Uploaded Evidence / Attachments (Keep directory structure with .gitkeep)
+uploads/*
+!uploads/.htaccess
+!uploads/.gitkeep
+
+# Logs and temporary cache
+*.log
+scratch/
+.system_generated/
+
+# OS artifacts
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+

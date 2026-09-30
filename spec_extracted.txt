@@ -1,0 +1,681 @@
+企業級 ESG 永續管理與碳盤查系統系統規格書 (SRS & Architecture)
+Enterprise ESG Sustainability Management & GHG Inventory System技術棧：PHP 8.2 + MySQL / MariaDB + XAMPP 運行架構
+項目
+內容說明
+系統名稱
+企業級 ESG 智慧管理與碳盤查雲端系統 (ESG-Pro System)
+文件版本
+Version 1.0 (正式釋出版)
+文件性質
+系統需求規格書 (SRS) 與技術架構設計書
+開發技術棧
+後端核心：PHP 8.2+ / 資料庫：MySQL 8.0 (MariaDB 10.4+) / 運行環境：XAMPP 8.2
+輔助框架與套件
+Bootstrap 5, AdminLTE 3, Chart.js / ECharts, PDO, PhpSpreadsheet, PHPMailer
+文件編寫日期
+2026 年 09 月 29 日
+機密等級
+內部機密 (Confidential) - 供開發團隊、專案管理與系統維運參考
+第一章：專案概述與系統建置目標
+1.1 專案背景與市場法規驅動力
+全球極端氣候風險加劇，國際永續發展規範日趨嚴格，包含歐盟碳邊境調整機制 (CBAM)、國際財務報導準則 (IFRS S1/S2)、全球報告倡議組織 (GRI Standards 2021)、氣候相關財務揭露 (TCFD) 及台灣金管會「上市櫃公司永續發展路徑圖」與《氣候變遷因應法》，均強制要求企業必須落實溫室氣體碳盤查（範疇一、二、三）及 ESG 關鍵績效指標之量化管理與資訊揭露。
+傳統企業在進行 ESG 管理與碳盤查時，常面臨「各部門 Excel 數據分散難以彙整」、「排放係數版本不一致且缺乏稽核依據」、「無佐證附件保存機制」、「計算公式人工手動運算易出錯」以及「無法即時掌握減碳進度」等痛點。因此，建置一套標準化、自動化且具備審批與軌跡留存的 ESG 永續管理系統刻不容緩。
+1.2 系統建置目標
+本系統旨在為企業打造一站式 ESG 數據蒐集、碳盤查量化計算、憑證歸檔、審批工作流與報表自動化生成平台，核心目標如下：
+1. 碳盤查自動化精準計算：依據 ISO 14064-1:2018 與 GHG Protocol 標準，支援範疇一 (直接排放)、範疇二 (能源間接排放) 及範疇三 (其他間接排放) 之活動數據填報與排放量自動試算 (活動數據 × 排放係數 × GWP)。
+2. 跨部門多維度數據收集與工作流：建立標準化 ESG 指標範本（環境 E、社會 S、治理 G），支援各廠區、各部門線上定期填報、附件憑證上傳（發票、電單、檢驗報告）與多級主管簽核流。
+3. 係數庫動態管理與版本追溯：內建台灣環保署 (環境部) 碳足跡係數庫、能源局電力排碳係數、IPCC AR5/AR6 GWP 評估數據，並支援自訂自建係數與版本歷史管控。
+4. 視覺化 ESG 戰情室與報告書產出：提供即時碳排熱點分析、年度減碳目標追蹤、S/G 指標達成率，並一鍵自動匯出 GRI 指標對應表與 Excel / PDF 報表底稿。
+1.3 適用對象與角色定義
+使用者角色
+職責說明與使用情境
+系統最高管理員 (Super Admin)
+負責全系統維護、組織架構配置、權限角色設定 (RBAC)、系統參數與安全審計日誌查閱。
+ESG 推動委員會 / 永續長 (CSO)
+負責制定減碳目標與政策、審核全集團彙整數據、監控 ESG 戰情儀表板、導出年度永續報告書。
+部門 / 廠區填報人員 (Data Submitter)
+各部門（如總務、廠務、HR、工安、採購、財務）定期登入系統填報活動數據並上傳相關佐證憑證。
+部門審核主管 (Department Approver)
+負責初審各填報人員提交的活動數據與憑證真偽，具備審批通過或退回修正權限。
+內部稽核員 / 外部第三方驗證員 (Auditor)
+具備唯讀與軌跡檢視權限，可抽查歷史紀錄、計算公式歷程、附件單據以進行 ISO 14064-1 外部查證。
+1.4 專案範疇與限制
+本專案基於企業內部伺服器 (On-Premise) 或內網私有雲部署模式，採用標準 XAMPP 環境（Apache 網頁伺服器 + MySQL 資料庫 + PHP 核心引擎），確保企業敏感營業數據與碳排放數據不外流，具備高度自主性與安全性，並支援跨部門區域網路 (LAN) 及安全 VPN 存取。
+第二章：系統架構與技術棧規格
+2.1 系統架構設計 (MVC 架構)
+系統採用經典三層式 MVC (Model-View-Controller) 架構，確保系統各組件高度解耦、便於維護與未來模組化擴展：
+• 展示層 (View)：基於 HTML5、Bootstrap 5 與 AdminLTE 3 後台樣板，搭配 JavaScript (jQuery, Chart.js, ECharts, SweetAlert2) 提供極佳的響應式 (RWD) 使用者互動體驗與視覺化圖表。
+• 業務控制層 (Controller / Service)：由 PHP 8.2 物件導向程式碼構成，負責處理 HTTP 請求、安全防護驗證 (CSRF/XSS)、碳排計算核心演算法、工作流審批狀態機及檔案上傳控制。
+• 資料存取層 (Model / DAO)：透過 PHP PDO (PHP Data Objects) 介面進行 MySQL 資料庫連線與 Prepared Statements 參數化查詢，防止 SQL Injection 注入攻擊。
+2.2 開發與運行環境規格 (XAMPP Suite)
+組件名稱
+建議規格 / 版本
+用途說明與配置要求
+作業系統 (OS)
+Windows Server 2019/2022 或 Windows 10/11 64-bit
+XAMPP 運行平台與檔案存儲主機
+集成運行環境
+XAMPP for Windows v8.2.12 或更高版本
+包含 Apache, MySQL/MariaDB, PHP, phpMyAdmin
+網頁伺服器 (Web Server)
+Apache 2.4.x (啟用 mod_rewrite, mod_ssl, mod_headers)
+處理 HTTP/HTTPS 請求、虛擬主機路由與安全標頭
+後端語言 (Runtime)
+PHP 8.2.x 64-bit (啟用 pdo_mysql, mbstring, gd, curl, openssl, zip)
+系統核心業務邏輯運算、計算引擎與報表生成
+資料庫 (Database)
+MySQL 8.0.x / MariaDB 10.4.x (預設 InnoDB, utf8mb4)
+儲存組織、權限、活動數據、係數庫、審批流程及系統紀錄
+資料庫管理工具
+phpMyAdmin 5.2.x / DBeaver / Navicat
+資料庫結構維護、備份與管理員操作介面
+2.3 開發工具與輔助套件庫
+• 核心開發工具：Visual Studio Code (VSCode)、Git 版本控制、Postman (API 測試)。
+• PHP 後端函式庫 (Composer 套件管理)：
+   - phpoffice/phpspreadsheet (v1.29+)：處理 Excel 範本下載、批量活動數據匯入解析與報表匯出。
+   - phpmailer/phpmailer (v6.8+)：支援 SMTP 郵件發送，處理待辦催填通知與簽核流程提醒。
+   - dompdf/dompdf 或 mpdf/mpdf：將 HTML/CSS 報表動態轉為正式 PDF 文件。
+• 前端視覺化與 UI 套件：
+   - AdminLTE 3 (基於 Bootstrap 5)：現代化響應式後台管理系統介面。
+   - Chart.js 4.x / Apache ECharts 5.x：繪製碳排放趨勢線圖、範疇佔比圓餅圖、雷達圖與 ESG KPI 儀表盤。
+   - DataTables 1.13+：支援分頁、多欄位即時搜尋、排序與 CSV/Excel 快速匯出。
+2.4 硬體與網路架構需求
+環境類型
+最低配置 (Minimum)
+建議配置 (Recommended)
+伺服器 CPU
+4 核心 (Intel Xeon 或 Core i5 以上)
+8 核心以上 (Intel Xeon / AMD EPYC)
+伺服器記憶體 (RAM)
+8 GB DDR4
+16 GB ~ 32 GB DDR4/DDR5
+伺服器磁碟 (Storage)
+256 GB SSD (系統與資料庫)
+512 GB NVMe SSD + 2TB HDD (RAID 1/5 備份)
+網路頻寬與環境
+100 Mbps 內部區域網路 (LAN)
+1 Gbps LAN + 企業級 SSL/TLS 憑證 (HTTPS)
+用戶端需求
+標準 PC / 筆電，螢幕解析度 1366x768
+Chrome 100+、Edge 100+、Firefox 最新版
+第三章：系統功能模組詳細規格說明
+本 ESG 永續管理系統依據業務邏輯與標準劃分為六大核心模組：系統管理與權限模組、環境保護 (E) 管理模組、社會責任 (S) 管理模組、公司治理 (G) 管理模組、數據填報與審批工作流模組、智慧儀表板與報表生成模組。
+3.1 模組一：系統管理與權限模組 (Administration & RBAC)
+📌 模組核心任務構建企業組織層級樹狀圖，落實基於角色的存取控制 (RBAC)，確保各部門人員僅能操作其授權範圍內之廠區與指標，並完整留存所有系統操作行為與安全日誌。
+功能項代碼
+功能名稱
+詳細功能規格說明
+輸入/輸出
+權限要求
+ADM-01
+多層級組織樹設定
+支援建立集團、子公司、廠區、部門等多層級組織架構，可指定各廠區負責人與聯絡窗口。
+組織基本資料、部門代碼、階層父子關係關聯
+系統管理員
+ADM-02
+角色與權限分配 (RBAC)
+定義系統角色（如填報員、初審主管、ESG委員、稽核員），並對模組、頁面及功能按鈕（增刪改查/匯出）進行細緻權限勾選賦權。
+功能清單矩陣、權限勾選集
+系統管理員
+ADM-03
+使用者帳號管理
+維護使用者帳號、加密密碼、姓名、Email、所屬部門及指派角色；支援帳號啟用/停用及密碼重設。
+使用者資料表、密碼雜湊 (Password Hash)
+系統管理員
+ADM-04
+系統安全日誌 (Audit Log)
+自動記錄所有使用者的登入/登出、數據新增/修改/刪除/審批/匯出操作，包含操作者IP、時間戳記、修改前後數值對比。
+只讀日誌列表、條件篩選 (時間/帳號/模組/動作)
+管理員/稽核員
+ADM-05
+系統參數與環境設定
+設定年度基準年 (Base Year)、全球暖化潛勢 (GWP 版本如 AR5/AR6)、SMTP 郵件伺服器設定、上傳檔案大小限制等。
+系統配置鍵值對 (Key-Value Config)
+系統管理員
+3.2 模組二：環境保護管理模組 (Environmental Management - E)
+本模組為系統最關鍵之核心，完整涵蓋 ISO 14064-1:2018 與 GHG Protocol 之溫室氣體碳盤查、能源使用、水資源及廢棄物管理。
+3.2.1 溫室氣體碳盤查 (GHG Inventory) 詳細規格
+依據溫室氣體盤查三大範疇進行活動數據分類收集，並由系統引擎自動計算七大溫室氣體 (CO2, CH4, N2O, HFCs, PFCs, SF6, NF3) 之當量 (公噸 CO2e)：
+範疇類別
+排放源分類
+盤查項目與計算依據
+活動數據單位
+對應憑證單據
+範疇一 (Scope 1)直接排放
+固定燃燒源
+鍋爐、發電機、加熱爐所消耗之柴油、天然氣、重油、液化石油氣(LPG)。
+公升 (L)、立方公尺 (m³)、公噸
+中油發票、加油收據、瓦斯收據、儀表抄表紀錄
+範疇一 (Scope 1)直接排放
+移動燃燒源
+公務車、堆高機、貨車所消耗之汽油、柴油。
+公升 (L)、行駛里程 (km)
+加油卡月結單、行車日誌、加油發票
+範疇一 (Scope 1)直接排放
+製程與逸散源
+空調冰水主機/冷氣冷媒填充 (R-134a, R-410A等)、化糞池、乾粉/二氧化碳滅火器補充。
+填充重量 (kg)、化糞池使用人數
+冷媒維修保養單、滅火器充填單、設備維護紀錄
+範疇二 (Scope 2)能源間接
+外購電力
+各廠區向台電或售電業者購買之一般電力度數 (kWh)。依據能源局最新電力排碳係數計算。
+度 (kWh) / 千度 (MWh)
+台灣電力公司電費收據、綠電轉供憑證
+範疇二 (Scope 2)能源間接
+外購蒸氣/熱能
+工業區蒸氣管道外購蒸氣噸數，依蒸氣焓值與係數計算。
+公噸 (ton)
+熱能/蒸氣購買結算清單
+範疇三 (Scope 3)其他間接
+價值鏈上下游
+上游原物料運輸、廢棄物委外處理、員工上下班通勤、商務航空差旅等。
+運輸噸公里 (t-km)、差旅里程、廢棄物重量
+機票票根、差旅報銷單、清運三聯單
+3.2.2 碳排放係數庫管理 (Emission Factor Database)
+• 內建係數庫：系統預載台灣環境部 (環保署) 碳足跡係數庫 1.2 版、能源局歷年電力排碳係數 (如 0.495 kg CO2e/度)、IPCC AR5/AR6 之 GWP 數值表。
+• 自訂與版本管控：允許企業新增供應商特定自訂係數（如特定化學品或特殊原料），並具備「有效起訖日」與「版本追溯」機制，確保歷史年度盤查數據不因新係數覆蓋而產生偏差。
+• 試算引擎公式：碳排放量 (tCO2e) = ∑ [ 活動數據 × 排放係數 × GWP ÷ 1000 ]
+3.2.3 水資源與廢棄物污染防制管理
+• 水資源管理：自來水用水度數、地下水抽取量、工廠冷卻水回收再利用量、廢水放流量及水質檢測數據 (COD, BOD, SS, 重金屬檢測報告)。
+• 廢棄物管理：依環保署代碼分類記錄一般事業廢棄物 (D類)、有害事業廢棄物 (C類)、廢棄物再利用率 (焚化/掩埋/物理處理/回收)，並上傳清運遞送聯單。
+3.3 模組三：社會責任管理模組 (Social Management - S)
+📌 模組核心任務量化企業對員工、供應鏈及社會社群之承諾與實踐，符合 GRI 401(勞雇關係)、GRI 403(職業安全衛生)、GRI 404(訓練與教育)、GRI 405(多元與平等機會) 標準。
+子系統項
+關鍵指標 (KPI)
+詳細規格與計算邏輯
+對應 GRI 標準
+人力資本與多元化
+員工性別/年齡分佈高階主管女性比例新進與離職員工率
+依職等（高管/中管/基層）與年齡層 (<30, 30-50, >50) 統計人數及佔比；計算年度離職率及非自願離職率。
+GRI 401GRI 405
+薪酬與育嬰留停
+男女薪酬比例育嬰留職停薪復職率
+統計各職級平均底薪與薪酬之男女比；追蹤申請育嬰留停人數、應復職人數、實際復職率及一年後留任率。
+GRI 401-3GRI 405-2
+職業安全衛生 (EHS)
+工傷事故件數 (LTI)失能傷害頻率 (FR)失能傷害嚴重率 (SR)
+記錄工作場所職災事件、損失工作日數；自動計算 FR = (失能次數 × 10^6) / 總經歷工時；SR = (損失日數 × 10^6) / 總經歷工時。
+GRI 403-9ISO 45001
+員工培育與發展
+平均每人受訓時數ESG/安衛專題培訓
+依性別與職級記錄教育訓練課程類別、時數及費用，計算平均每位員工年度受訓時數與滿意度評分。
+GRI 404-1GRI 404-2
+供應鏈與社區參與
+供應商 ESG 評鑑率公益慈善投入與志工
+發送供應商永續行為問卷、評分等級 (A/B/C) 與高風險輔導追蹤；記錄社會公益捐贈金額、志工服務總時數。
+GRI 308 / 414GRI 413
+3.4 模組四：公司治理管理模組 (Governance Management - G)
+本模組專注於董事會運作、誠信經營、風險管理與資訊安全，落實透明健全之公司治理體制。
+治理評鑑構面
+功能項目
+指標說明與系統記錄內容
+佐證附件類型
+董事會運作與結構
+董事會出席與獨立性
+董事會席次、獨立董事席次比例 (需大於1/3)、各董事個別出席率、董事會多元化政策執行現況。
+董事會簽到簿、議事錄
+誠信經營與反貪腐
+反貪腐與道德培訓
+反貪腐政策簽署率、全員商業道德培訓覆蓋率 (100% 目標)、利害關係人利益衝突宣告登記。
+培訓簽到表、簽署承諾書
+利害關係人與檢舉
+吹哨者檢舉機制
+提供獨立檢舉案件登記、匿名案件受理、調查進度追蹤、調查報告歸檔與結案紀錄（嚴格權限防護）。
+調查報告、結案公文
+資訊安全與隱私
+資安演練與事件通報
+社交工程演練覆蓋率與點擊率、ISO 27001 認證維護紀錄、重大資安事件零通報記錄與隱私權侵害客訴統計。
+資安檢驗證書、演練報告
+氣候風險 (TCFD)
+氣候實體與轉型風險
+鑑別極端氣候（淹水、高溫）實體風險及法規政策（碳費、碳稅）轉型風險之發生機率、衝擊程度與因應對策矩陣。
+風險評估矩陣表
+3.5 模組五：數據填報、憑證附件與審批工作流模組 (Workflow Engine)
+本模組為解決跨廠區、跨部門數據收集混亂之關鍵機制，具備任務派發、線上填報、附件查驗與多層級審批狀態機。
+3.5.1 工作流狀態機設計 (State Machine)
+• 狀態 1【待填報 (Pending)】：系統依排程（每月初或每季初）自動生成填報任務，並透過 PHPMailer 發信通知各廠區部門負責人。
+• 狀態 2【已暫存 (Draft)】：填報人可在線填寫部分數據並暫存，隨時修改，尚未進入簽核。
+• 狀態 3【已提交 / 待初審 (Submitted)】：填報人確認數據無誤並強制上傳憑證附件（如無憑證將提示警告），提交給部門一級主管。
+• 狀態 4【退回修正 (Rejected)】：審核主管若發現數據異常或憑證模糊，可填寫退回原因退回給填報人，狀態重置並郵件通知補正。
+• 狀態 5【初審通過 / 待委員會複核 (Approved Level 1)】：部門主管核准後，流轉至集團 ESG 推動小組進行跨部門橫向複核。
+• 狀態 6【最終核准並封存 (Final Approved / Locked)】：ESG 委員會核准後，該筆活動數據即刻納入正式計算引擎，且欄位進入鎖定防篡改狀態。
+3.6 模組六：智慧儀表板與報表生成模組 (Dashboard & Reporting)
+• ESG 戰情室視覺化：
+   - 總碳排放量即時儀表盤（按範疇一、二、三分佈；按廠區分佈；按能源別分佈）。
+   - 年度減碳目標對比圖（基準年 vs 目標年 vs 當前累積值，顯示達標百分比與差距警示）。
+   - 碳排放強度 (Emission Intensity) 計算：每單位營收碳排放 (tCO2e/百萬元) 及每人均碳排放 (tCO2e/人)。
+• 永續報告書底稿與報表自動產出：
+   - GRI Content Index 2021 索引對照表自動映射匯出。
+   - ISO 14064-1 溫室氣體盤查清冊 Excel 檔案匯出（含 activity data、emission factors、計算公式欄位）。
+   - ESG 關鍵績效彙整年度 PDF 報告一鍵生成。
+第四章：資料庫結構與實體關聯設計 (MySQL / MariaDB)
+本系統資料庫設計依據第三正規化 (3NF) 原則，採用 InnoDB 儲存引擎，字元集統一設定為 `utf8mb4` 與定序 `utf8mb4_unicode_ci`，確保多國語系與特殊符號之完整支援。以下為核心資料表結構定義：
+4.1 核心資料表清單與關聯概述
+資料表名稱 (Table Name)
+中文名稱 / 用途
+主要外鍵關聯 (Foreign Keys)
+sys_organizations
+組織機構表 (集團/廠區/部門)
+parent_id -> sys_organizations(id)
+sys_roles
+系統角色定義表
+-
+sys_users
+使用者帳號表
+org_id, role_id
+esg_emission_factors
+碳排放係數庫表
+created_by -> sys_users(id)
+esg_ghg_records
+溫室氣體活動數據與碳排主表
+org_id, user_id, factor_id, task_id
+esg_energy_water_records
+能源與水資源消耗表
+org_id, user_id
+esg_waste_records
+廢棄物產出與清運表
+org_id, user_id
+esg_social_records
+社會責任 (S) 數據表
+org_id, user_id
+esg_governance_records
+公司治理 (G) 數據表
+org_id, user_id
+esg_workflow_tasks
+填報任務與工作流狀態表
+org_id, assigned_user_id
+esg_workflow_logs
+審批簽核歷程軌跡表
+task_id, approver_id
+esg_attachments
+佐證資料與憑證檔案表
+record_type, record_id, upload_by
+sys_audit_logs
+系統安全操作日誌表
+user_id
+4.2 關鍵資料表詳細欄位規格定義
+1. 使用者帳號表 (sys_users)
+欄位名稱 (Field)
+型態 (Type)
+長度/限制
+允許空 (Null)
+預設值
+說明與備註
+id
+INT UNSIGNED
+AUTO_INCREMENT
+NO
+None
+使用者主鍵 (PK)
+username
+VARCHAR
+50
+NO
+None
+登入帳號 (唯一索引 UNIQUE)
+password_hash
+VARCHAR
+255
+NO
+None
+Bcrypt 加密雜湊密碼
+real_name
+VARCHAR
+50
+NO
+None
+使用者真實中文姓名
+email
+VARCHAR
+100
+NO
+None
+電子信箱 (用於通知信發送)
+org_id
+INT UNSIGNED
+-
+NO
+None
+所屬組織/部門 (FK -> sys_organizations)
+role_id
+INT UNSIGNED
+-
+NO
+None
+指派角色 (FK -> sys_roles)
+status
+TINYINT
+1
+NO
+1
+帳號狀態 (1:啟用, 0:停用)
+created_at
+DATETIME
+-
+NO
+CURRENT_TIMESTAMP
+建立時間
+updated_at
+DATETIME
+-
+YES
+NULL
+最後更新時間
+2. 碳排放係數庫表 (esg_emission_factors)
+欄位名稱 (Field)
+型態 (Type)
+長度/限制
+允許空 (Null)
+預設值
+說明與備註
+id
+INT UNSIGNED
+AUTO_INCREMENT
+NO
+None
+係數主鍵 (PK)
+category
+VARCHAR
+50
+NO
+None
+類別 (Scope1_Fuel, Scope2_Electricity, Scope3)
+fuel_name
+VARCHAR
+100
+NO
+None
+排放源名稱 (如: 柴油-固定源、車用汽油、電力)
+activity_unit
+VARCHAR
+20
+NO
+None
+活動數據單位 (L, m3, kWh, ton, kg)
+co2_factor
+DECIMAL
+12,6
+NO
+0.000000
+CO2 排放係數 (kg CO2 / 單位)
+ch4_factor
+DECIMAL
+12,6
+NO
+0.000000
+CH4 排放係數 (kg CH4 / 單位)
+n2o_factor
+DECIMAL
+12,6
+NO
+0.000000
+N2O 排放係數 (kg N2O / 單位)
+total_factor_co2e
+DECIMAL
+12,6
+NO
+0.000000
+綜合當量係數 (kg CO2e / 單位)
+source_org
+VARCHAR
+100
+NO
+None
+係數來源機構 (環境部/能源局/IPCC/EPA)
+applicable_year
+INT
+4
+NO
+2024
+適用年度 (如 2024 年度電力排碳係數)
+is_active
+TINYINT
+1
+NO
+1
+是否有效啟用 (1:有效, 0:停用)
+3. 溫室氣體活動數據與碳排計算表 (esg_ghg_records)
+欄位名稱 (Field)
+型態 (Type)
+長度/限制
+允許空 (Null)
+預設值
+說明與備註
+id
+BIGINT UNSIGNED
+AUTO_INCREMENT
+NO
+None
+記錄主鍵 (PK)
+org_id
+INT UNSIGNED
+-
+NO
+None
+所屬廠區/部門代碼 (FK)
+record_year
+INT
+4
+NO
+None
+盤查年度 (如 2025)
+record_month
+TINYINT
+2
+NO
+None
+盤查月份 (1-12)
+scope
+TINYINT
+1
+NO
+None
+範疇分類 (1:範疇一, 2:範疇二, 3:範疇三)
+source_type
+VARCHAR
+50
+NO
+None
+排放源細項 (Stationary, Mobile, Fugitive, Electric)
+factor_id
+INT UNSIGNED
+-
+NO
+None
+使用之係數 ID (FK -> esg_emission_factors)
+activity_amount
+DECIMAL
+14,4
+NO
+0.0000
+活動數據用量 (如 1250.50 度或公升)
+calculated_co2e
+DECIMAL
+14,4
+NO
+0.0000
+自動計算之碳排量 (公噸 tCO2e)
+status
+VARCHAR
+20
+NO
+'draft'
+狀態 (draft, pending, approved, rejected)
+user_id
+INT UNSIGNED
+-
+NO
+None
+填報人員 ID (FK)
+approver_id
+INT UNSIGNED
+-
+YES
+NULL
+最後簽核主管 ID
+created_at
+DATETIME
+-
+NO
+CURRENT_TIMESTAMP
+建立時間
+4. 憑證與佐證附件檔案表 (esg_attachments)
+欄位名稱 (Field)
+型態 (Type)
+長度/限制
+允許空 (Null)
+預設值
+說明與備註
+id
+BIGINT UNSIGNED
+AUTO_INCREMENT
+NO
+None
+附件主鍵 (PK)
+record_type
+VARCHAR
+30
+NO
+None
+關聯模組 ('ghg', 'energy', 'waste', 'social', 'gov')
+record_id
+BIGINT UNSIGNED
+-
+NO
+None
+對應業務資料表之主鍵 ID
+file_name
+VARCHAR
+255
+NO
+None
+原始檔案名稱 (如 台電202506電費單.pdf)
+file_path
+VARCHAR
+500
+NO
+None
+伺服器存儲實體相對路徑 (UUID 命名防衝突)
+file_size
+INT UNSIGNED
+-
+NO
+0
+檔案大小 (Bytes)
+file_ext
+VARCHAR
+10
+NO
+None
+副檔名 (pdf, jpg, png, xlsx, docx)
+uploaded_by
+INT UNSIGNED
+-
+NO
+None
+上傳者 ID (FK -> sys_users)
+uploaded_at
+DATETIME
+-
+NO
+CURRENT_TIMESTAMP
+上傳時間
+第五章：介面與外部整合設計 (UI/UX & Integration)
+5.1 使用者介面 (UI/UX) 設計原則
+1. 響應式佈局 (RWD)：基於 Bootstrap 5 柵格系統，保證在桌上型電腦、筆電及平板電腦上均有良好的排版與操作流暢度。
+2. 表單輸入防錯與即時驗證：利用 JavaScript / jQuery 進行前端欄位格式檢查（如負數防呆、小數點位數限制、必填欄位提示），後端 PHP 同步實施嚴格二度驗證。
+3. 智慧動態聯動：選擇特定排放源時，系統自動下拉匹配該項目對應之單位（如柴油自動帶出公升，電力自動帶出度數），並自動載入有效年份之官方排碳係數與即時預估碳排量。
+4. 狀態色標指示：工作流狀態採用直觀色標（草稿-灰色、待審-黃色、通過-綠色、退回-紅色），提升審查效率。
+5.2 Excel 範本批量匯入匯出介面
+• Excel 匯入模組 (PhpSpreadsheet)：提供標準填報範本下載（含填寫範例與下拉選單約束）。上傳後系統自動進行資料列解析、型態比對、重複性偵測，並將錯誤列詳細反饋給使用者，全部合格後方執行事務寫入 (DB Transaction)。
+• 報表匯出介面：支援將盤查清冊、各範疇統計表、GRI 索引表導出為 Excel (.xlsx) 及 PDF 格式。
+5.3 郵件通知與自動排程介面
+• SMTP 郵件引擎 (PHPMailer)：整合公司內部 Exchange 或外部 SMTP 伺服器，於每月填報日、退件補正、主管審核完成時發送 HTML 格式通知信。
+• Windows 排程任務 (Task Scheduler)：設定每月 1 號凌晨 01:00 執行 PHP CLI 腳本 (`php cron_job_monthly_tasks.php`)，自動建立全公司當月填報任務工單。
+第六章：非功能性需求與資訊安全規範
+6.1 系統效能需求
+• 頁面載入速度：常規數據清單與表單頁面載入時間不大於 1.5 秒；5 萬筆以上歷史數據查詢不大於 2.5 秒。
+• 計算引擎效能：全集團年度所有範疇碳排放匯總與計算，於 3 秒內完成動態渲染與圖表繪製。
+• 並行處理能力：支援至少 100 位使用者同時在線進行表單填報與報表檢視無延遲卡頓。
+6.2 資訊安全防護機制 (Security Specs)
+安全防護維度
+防護威脅項目
+具體實作技術與安全措施規範
+資料庫安全
+SQL Injection 注入攻擊
+全面禁止 SQL 字串拼接，一律採用 PHP PDO Prepared Statements 參數化查詢綁定機制。
+前端跨站攻擊
+XSS 跨站腳本攻擊
+所有前端輸出變數均經 htmlspecialchars($val, ENT_QUOTES, 'UTF-8') 轉義處理，過濾惡意 HTML 標籤。
+跨站請求偽造
+CSRF 偽造請求
+所有 POST/PUT/DELETE 敏感表單與 AJAX 請求均嵌入動態 CSRF Token 驗證機制。
+密碼與認證安全
+密碼外洩與暴力破解
+採用 PHP 原生 password_hash() (Bcrypt 演算法) 存儲密碼；密碼錯誤連續 5 次鎖定帳號 15 分鐘。
+檔案上傳防護
+惡意木馬檔案上傳
+強制白名單驗證副檔名與 MIME-Type (只允許 pdf, jpg, png, xlsx)，重新命名隨機 UUID 檔名，禁止上傳目錄執行 PHP 腳本 (.htaccess 配置)。
+資料傳輸加密
+竊聽與中間人攻擊
+配置 Apache SSL/TLS 模組，強制全站走 HTTPS 443 加密傳輸，並配置 HSTS 安全標頭。
+6.3 資料備份與災難復原策略
+• 資料庫自動備份：利用 Windows 排程結合 `mysqldump` 工具，每日夜間 02:00 自動進行完整資料庫備份並壓縮封存，保留至少 30 日備份檔案。
+• 附件增量備份：每週對 `uploads/` 附件目錄進行增量備份至異地或企業 NAS 儲存伺服器。
+第七章：XAMPP 建置、部署與維運指南
+7.1 系統標準目錄結構設計
+本系統採標準化 MVC 目錄架構，確保程式碼模組化、職責分明：
+esg_system/ (專案根目錄)├── config/                 # 系統設定檔 (db.php, app.php, mail.php)├── controllers/            # 控制器層 (AuthController.php, GhgController.php, ReportController.php)├── models/                 # 資料庫模型 (User.php, GhgRecord.php, EmissionFactor.php)├── views/                  # 視圖層樣板 (layout/, auth/, ghg/, dashboard/, reports/)├── core/                   # 核心基礎庫 (Database.php, Router.php, Auth.php, Calculator.php)├── helpers/                # 輔助函式庫 (Security.php, Uploader.php, Mailer.php)├── vendor/                 # Composer 第三方依賴套件 (PhpSpreadsheet, PHPMailer, Dompdf)├── assets/                 # 前端資源 (css/, js/, plugins/adminlte/, images/)├── uploads/                # 憑證附件實體儲存目錄 (按年份月份子目錄分類)├── logs/                   # 系統錯誤日誌與稽核日誌├── cron/                   # 排程腳本目錄 (monthly_dispatch.php, db_backup.bat)├── .htaccess               # Apache 路由重寫與目錄安全存取限制├── composer.json           # PHP 套件管理配置└── index.php               # 單一入口導向檔案
+7.2 XAMPP 環境組態優化建議 (php.ini & my.ini)
+為保證系統處理大量碳排數據運算與憑證上傳之順暢，需對 XAMPP 預設配置進行以下微調：
+• php.ini 設定：
+   - upload_max_filesize = 20M (允許較大之檢驗報告或 PDF 憑證上傳)
+   - post_max_size = 25M
+   - memory_limit = 256M (確保 PhpSpreadsheet 匯出大型報表記憶體充足)
+   - max_execution_time = 300 (延長大型報表產生與批量計算之逾時上限)
+   - date.timezone = Asia/Taipei (設定標準台灣時區)
+• my.ini (MySQL 配置) 設定：
+   - innodb_buffer_pool_size = 512M (提升資料表查詢快取效能)
+   - max_connections = 200 (擴充並行連線數上限)
+   - character-set-server = utf8mb4、collation-server = utf8mb4_unicode_ci
+7.3 安全性加固步驟
+1. 修改 MySQL 預設 Root 密碼：於 phpMyAdmin 或 MySQL CLI 中為 root@localhost 設定強密碼，並刪除匿名帳號與測試資料庫 (test)。
+2. 建立專屬 DB 帳號：建立名為 esg_admin 且僅對 esg_db 資料庫具有 CRUD 權限之獨立帳戶，禁止應用程式以 root 權限連線。
+3. 封鎖 phpMyAdmin 對外存取：修改 httpd-xampp.conf，僅允許本機 127.0.0.1 存取 phpMyAdmin，防止內網未授權登入。
+4. 限制 uploads 目錄執行權限：在 uploads/ 目錄建立 .htaccess 寫入 php_flag engine off，徹底防止上傳 PHP 木馬腳本被執行。
+第八章：測試、驗收標準與專案開發時程
+8.1 測試規劃與驗收標準
+測試類別
+測試重點與方法
+驗收通過標準
+單元與演算法測試
+針對碳排計算核心演算法 (Scope 1/2/3) 進行邊界值與已知歷史案例對比驗算。
+系統計算結果與人工手動試算/第三方專業報告誤差值為 0.0000%。
+權限與流程測試
+模擬不同角色登入，驗證跨部門數據隔離、操作按鈕授權及審批退件流程。
+無越權存取漏洞，簽核流程能正確流轉並發送通知與變更狀態。
+檔案與匯入測試
+上傳不同格式憑證 (PDF/JPG) 及 Excel 批量匯入測試（含空值、錯誤格式數據）。
+格式錯誤能明確提示錯誤行數；合法檔案能正確入庫且防範木馬。
+使用者驗收 (UAT)
+由 ESG 推動小組與各部門試用人員進行完整一季之模擬填報、審批與產表。
+獲得業務單位確認符合實際作業流程，報表格式符合 GRI/永續規範。
+8.2 專案開發里程碑 (WBS)
+階段
+時程週期
+主要工作內容與交付成果
+第一階段：需求確認與架構搭建
+第 1 ~ 2 週
+確認各廠區盤查範疇與指標清單、建置 XAMPP 開發環境、建立 MySQL 資料表結構、搭建 MVC 框架與 RBAC 基礎。
+第二階段：環境保護 (E) 與碳盤查開發
+第 3 ~ 5 週
+開發係數庫維護模組、範疇一/二/三活動數據填報介面、憑證上傳、自動碳排計算引擎與 Excel 匯入模組。
+第三階段：S & G 模組與工作流開發
+第 6 ~ 7 週
+開發社會 (S) 與治理 (G) 指標填報、建置多階審批狀態機、審查退件機制與 SMTP 郵件提醒通知。
+第四階段：戰情儀表板與報表生成
+第 8 ~ 9 週
+整合 Chart.js/ECharts 打造視覺化戰情室、開發 GRI 索引表與 ISO 14064-1 盤查清冊 Excel/PDF 導出功能。
+第五階段：資安加固、整合測試與上線
+第 10 ~ 12 週
+系統安全滲透防護檢查、UAT 使用者教育訓練、歷史數據導入、正式上線運行與維運移交。
