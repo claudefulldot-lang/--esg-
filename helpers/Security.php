@@ -8,10 +8,11 @@ class Security {
         }
 
         $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        $cookiePath = defined('BASE_URL') ? (BASE_URL ?: '/') : '/';
         session_name('ESGSESSID');
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/esg',
+            'path' => $cookiePath,
             'secure' => $secure,
             'httponly' => true,
             'samesite' => 'Lax',

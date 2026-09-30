@@ -26,10 +26,15 @@ class Router {
         $method = $_SERVER['REQUEST_METHOD'];
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-        // Strip project prefix /esg if present
-        $base = '/esg';
-        if (str_starts_with($uri, $base)) {
+        // Strip project prefix (dynamically from BASE_URL or /esg)
+        if (!defined('BASE_URL') && file_exists(__DIR__ . '/../config/app.php')) {
+            require_once __DIR__ . '/../config/app.php';
+        }
+        $base = defined('BASE_URL') ? BASE_URL : '/esg';
+        if (!empty($base) && str_starts_with($uri, $base)) {
             $uri = substr($uri, strlen($base));
+        } elseif (str_starts_with($uri, '/esg')) {
+            $uri = substr($uri, 4);
         }
         $uri = '/' . ltrim($uri, '/');
         if ($uri !== '/' && str_ends_with($uri, '/')) {
@@ -51,6 +56,7 @@ class Router {
 
         // 404 handler
         http_response_code(404);
-        echo "<!DOCTYPE html><html><head><title>404 Not Found</title><link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css'></head><body class='bg-light d-flex align-items-center justify-content-center vh-100'><div class='text-center p-5 bg-white shadow rounded'><h1>404</h1><h4 class='text-muted mb-4'>查無此系統頁面 ({$uri})</h4><a href='/esg/' class='btn btn-primary'>返回 ESG 戰情首頁</a></div></body></html>";
+        $homeUrl = (defined('BASE_URL') ? BASE_URL : '/esg') . '/';
+        echo "<!DOCTYPE html><html><head><title>404 Not Found</title><link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css'></head><body class='bg-light d-flex align-items-center justify-content-center vh-100'><div class='text-center p-5 bg-white shadow rounded'><h1>404</h1><h4 class='text-muted mb-4'>查無此系統頁面 ({$uri})</h4><a href='{$homeUrl}' class='btn btn-primary'>返回 ESG 戰情首頁</a></div></body></html>";
     }
 }

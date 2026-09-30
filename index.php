@@ -16,6 +16,9 @@ date_default_timezone_set('Asia/Taipei');
 // Autoloader
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Load application configuration & define BASE_URL
+require_once __DIR__ . '/config/app.php';
+
 // Manual autoload fallback for core classes if composer hasn't re-dumped
 spl_autoload_register(function ($class) {
     $prefixes = [

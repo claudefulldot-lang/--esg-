@@ -25,6 +25,9 @@ $currentUser = Auth::user();
     <?php foreach (($extraStyles ?? []) as $stylesheet): ?>
         <link href="<?= Security::e($stylesheet) ?>" rel="stylesheet">
     <?php endforeach; ?>
+    <script>
+        window.ESG_BASE_URL = '<?= defined("BASE_URL") ? BASE_URL : "/esg" ?>';
+    </script>
 </head>
 <body class="bg-light">
 

@@ -1,9 +1,22 @@
 <?php
 // Application Settings & System Constants
+
+$scriptDir = '';
+if (!empty($_SERVER['SCRIPT_NAME'])) {
+    $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $scriptDir = ($dir === '/' || $dir === '.') ? '' : $dir;
+}
+
+$baseUrl = getenv('ESG_BASE_URL') ?: ($scriptDir ?: '/esg');
+
+if (!defined('BASE_URL')) {
+    define('BASE_URL', $baseUrl);
+}
+
 return [
     'app_name'    => 'ESG-Pro 智慧管理與碳盤查系統',
     'app_version' => '1.0.0',
-    'base_url'    => '/esg',
+    'base_url'    => $baseUrl,
     'timezone'    => 'Asia/Taipei',
     'session_key' => 'esg_auth_user',
     'max_upload_size' => 20 * 1024 * 1024, // 20 MB

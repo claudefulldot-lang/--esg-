@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadStatus = async () => {
         try {
-            const response = await fetch('/esg/api/ai-assistant/status', { credentials: 'same-origin' });
+            const baseUrl = window.ESG_BASE_URL || '/esg';
+            const response = await fetch(baseUrl + '/api/ai-assistant/status', { credentials: 'same-origin' });
             const data = await response.json();
             if (data.success) state = data.data;
         } catch (_) {
@@ -94,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderState();
         const typing = appendMessage('正在查詢本系統操作知識…', 'typing');
         try {
-            const response = await fetch('/esg/api/ai-assistant/chat', {
+            const baseUrl = window.ESG_BASE_URL || '/esg';
+            const response = await fetch(baseUrl + '/api/ai-assistant/chat', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest' },

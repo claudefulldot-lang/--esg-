@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         result.className = 'alert alert-secondary py-2';
         result.textContent = '正在透過伺服器測試 OpenAI Responses API…';
         try {
-            const response = await fetch('/esg/admin/ai-assistant/test', {
+            const baseUrl = window.ESG_BASE_URL || '/esg';
+            const response = await fetch(baseUrl + '/admin/ai-assistant/test', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest' },

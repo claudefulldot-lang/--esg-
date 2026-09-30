@@ -7,6 +7,7 @@ return [
     'username' => getenv('ESG_DB_USER') ?: 'root',
     'password' => getenv('ESG_DB_PASSWORD') !== false ? getenv('ESG_DB_PASSWORD') : '',
     'charset'  => 'utf8mb4',
+    'prefix'   => getenv('ESG_DB_PREFIX') ?: '',
     'options'  => [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

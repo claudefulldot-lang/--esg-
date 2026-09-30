@@ -2,15 +2,15 @@
 /**
  * Automated Verification Script for ESG-Pro System
  */
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // Manual autoload fallback
 spl_autoload_register(function ($class) {
     $prefixes = [
-        'App\\Controllers\\' => __DIR__ . '/controllers/',
-        'App\\Models\\'      => __DIR__ . '/models/',
-        'App\\Helpers\\'     => __DIR__ . '/helpers/',
-        'App\\'              => __DIR__ . '/core/'
+        'App\\Controllers\\' => __DIR__ . '/../controllers/',
+        'App\\Models\\'      => __DIR__ . '/../models/',
+        'App\\Helpers\\'     => __DIR__ . '/../helpers/',
+        'App\\'              => __DIR__ . '/../core/'
     ];
 
     foreach ($prefixes as $prefix => $baseDir) {

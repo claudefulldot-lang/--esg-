@@ -23,7 +23,7 @@ abstract class Controller {
         $content = ob_get_clean();
 
         if ($layout === 'none') {
-            echo $content;
+            echo self::filterBaseUrl($content);
             return;
         }
 
@@ -32,9 +32,28 @@ abstract class Controller {
         $sidebarFile = __DIR__ . '/../views/layouts/sidebar.php';
         $footerFile = __DIR__ . '/../views/layouts/footer.php';
 
+        ob_start();
         if (file_exists($headerFile)) require $headerFile;
         echo $content;
         if (file_exists($footerFile)) require $footerFile;
+        $fullOutput = ob_get_clean();
+
+        echo self::filterBaseUrl($fullOutput);
+    }
+
+    /**
+     * Filter view HTML to replace /esg/ links with current BASE_URL if different
+     */
+    public static function filterBaseUrl(string $html): string {
+        $base = defined('BASE_URL') ? BASE_URL : '/esg';
+        if ($base === '/esg') {
+            return $html;
+        }
+        return str_replace(
+            ['"/esg/', "'/esg/", '"/esg"', "'/esg'", 'href="/esg"', 'action="/esg"'],
+            ['"' . $base . '/', "'" . $base . '/', '"' . $base . '"', "'" . $base . "'", 'href="' . $base . '/"', 'action="' . $base . '/"'],
+            $html
+        );
     }
 
     /**
@@ -48,6 +67,14 @@ abstract class Controller {
      * Redirect to another URL
      */
     protected function redirect(string $url): void {
+        $base = defined('BASE_URL') ? BASE_URL : '/esg';
+        if ($base !== '/esg') {
+            if (str_starts_with($url, '/esg/')) {
+                $url = $base . substr($url, 4);
+            } elseif ($url === '/esg' || $url === '/esg/') {
+                $url = $base . '/';
+            }
+        }
         header("Location: {$url}");
         exit;
     }

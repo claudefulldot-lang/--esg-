@@ -208,7 +208,8 @@ class Auth {
      */
     public static function requireLogin(): void {
         if (!self::check()) {
-            header('Location: /esg/login');
+            $loginUrl = (defined('BASE_URL') ? BASE_URL : '/esg') . '/login';
+            header("Location: {$loginUrl}");
             exit;
         }
     }
@@ -220,7 +221,8 @@ class Auth {
         self::requireLogin();
         if (!self::can($module, $action)) {
             http_response_code(403);
-            die("<h1>403 Forbidden</h1><p>您無權限存取此模組或執行此操作 ({$module} / {$action})。<br><a href='/esg/'>返回首頁</a></p>");
+            $homeUrl = (defined('BASE_URL') ? BASE_URL : '/esg') . '/';
+            die("<h1>403 Forbidden</h1><p>您無權限存取此模組或執行此操作 ({$module} / {$action})。<br><a href='{$homeUrl}'>返回首頁</a></p>");
         }
     }
 }
